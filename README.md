@@ -52,6 +52,26 @@ April 24, 2021
 
 ## Function Descriptions
 
+### compute_training_entities_by_name()
+
+### get_names_from_file()
+
+Extracts all names from the XXX file, which contains all names in the training dataset. 
+
+### create_entity_from_name(name)
+
+Takes a string (name) and creates an entity named "name" in the format: {'name': name}
+
+### compute_entity_features(entities)
+
+
+### compute_name_pattern(name)
+
+
+### find_matching_entities(entities_by_name, target_entity)
+
+
+### capture_entities(entities_by_name, more_entities)
 
 ## Approach/Steps/Inner Monologue/Project Diary
 1. Got my files/folder structure/git repo all set up.
