@@ -59,7 +59,9 @@ def main(): #docList
         for entity in redacted_entities:
             print(f"target_entity: {entity}")
             matching_entities = find_matching_entities(training_entities_by_name, entity)
-            print(f"matching_entities: {matching_entities}")
+            print("There are", len(matching_entities), "matching entities:\n")
+            #for match in matching_entities: 
+            #    print(match['name'])
 
     # Predicting
     # print('\n')
@@ -77,6 +79,21 @@ def main(): #docList
     #         matching_entities = find_matching_entities(training_entities_by_name, entity)
     #         print(f"matching_entities: {matching_entities}")
 
+    D = make_features("The mamma mia franchise only succeeded because Meryl Streep is an absolute icon")
+    print(D)
+
+    print(type(training_entities_by_name[name]))
+
+    v = DictVectorizer(sparse=False)
+    train_X = v.fit_transform([x for (x,y) in D[:-1]])
+    train_y = [y for (x,y) in training_entities_by_name[:-1]]
+    test_X = v.fit_transform([x for (x,y) in training_entities_by_name[-1:]])
+    test_y = [y for (x,y) in training_entities_by_name[-1:]]
+    clf = DecisionTreeClassifier(criterion="entropy")
+    #clf = KNeighborsClassifier(n_neighbors=3)
+    clf.fit(train_X, train_y)
+    print("Decison Tree: ", clf.predict(test_X), clf.predict_proba(test_X), test_y)
+    print("Cross Val Score: ", cross_val_score(clf, v.fit_transform([x for (x,y) in training_entities_by_name]), [y for (x,y) in training_entities_by_name], cv=2))
 
 def compute_training_entities_by_name():
     training_entities_by_name = {}
@@ -97,6 +114,7 @@ def create_entity_from_name(name):
 
 def compute_entity_features(entities):
     for entity in entities:
+        # Pattern for name lengths
         pattern = compute_name_pattern(entity['name'])
         entity['pattern'] = pattern
 
@@ -118,6 +136,44 @@ def find_matching_entities(entities_by_name, target_entity):
             matching_entities.append(entity)
     return matching_entities
 
+# =========== FROM CLASS =======================================================
+
+def make_features(sentence, ne="PERSON"):    
+    doc = nlp(sentence)    
+    D = []    
+    for e in doc.ents:        
+        if e.label_ == ne:            
+            d = {}            
+            d["name"] = e.text # We want to predict this            
+            d["length"] = len(e.text)            
+            d["word_idx"] = e.start            
+            d["char_idx"] = e.start_char            
+            d["spaces"] = 1 if " " in e.text else 0            
+            # gender?            
+            # Number of occurences?
+            D.append(d)    
+    return D
+
+
+def main2():
+    # print(len(sample))
+    features = []
+    for s in sample:
+        features.extend(make_features(s))
+    
+    # print(features)
+    v = DictVectorizer(sparse=False)
+    train_X = v.fit_transform([x for (x,y) in features[:-1]])
+    train_y = [y for (x,y) in features[:-1]]
+    test_X = v.fit_transform([x for (x,y) in features[-1:]])
+    test_y = [y for (x,y) in features[-1:]]
+    clf = DecisionTreeClassifier(criterion="entropy")
+    #clf = KNeighborsClassifier(n_neighbors=3)
+    clf.fit(train_X, train_y)
+    print("Decison Tree: ", clf.predict(test_X), clf.predict_proba(test_X), test_y)
+    print("Cross Val Score: ", cross_val_score(clf, v.fit_transform([x for (x,y) in features]), [y for (x,y) in features], cv=2))
+
+
 
 
 if __name__ == '__main__':
@@ -137,41 +193,3 @@ if __name__ == '__main__':
 #        main(docList)
 
     main()
-
-# =========== FROM CLASS =======================================================
-
-def make_features(sentence, ne="PERSON"):    
-    doc = nlp(sentence)    
-    D = []    
-    for e in doc.ents:        
-        if e.label_ == ne:            
-            d = {}            
-            # d["name"] = e.text # We want to predict this            
-            d["length"] = len(e.text)            
-            d["word_idx"] = e.start            
-            d["char_idx"] = e.start_char            
-            d["spaces"] = 1 if " " in e.text else 0            
-            # gender?            
-            # Number of occurences?
-            D.append((d, e.text))    
-    return D
-
-
-def main2():
-    # print(len(sample))
-    features = []
-    for s in sample:
-        features.extend(make_features(s))
-    
-    # print(features)
-    v = DictVectorizer(sparse=False)
-    train_X = v.fit_transform([x for (x,y) in features[:-1]])
-    train_y = [y for (x,y) in features[:-1]]
-    test_X = v.fit_transform([x for (x,y) in features[-1:]])
-    test_y = [y for (x,y) in features[-1:]]
-    #clf = DecisionTreeClassifier(criterion="entropy")
-    clf = KNeighborsClassifier(n_neighbors=3)
-    clf.fit(train_X, train_y)
-    print("Decison Tree: ", clf.predict(test_X), clf.predict_proba(test_X), test_y)
-    print("Cross Val Score: ", cross_val_score(clf, v.fit_transform([x for (x,y) in features]), [y for (x,y) in features], cv=2))
-
