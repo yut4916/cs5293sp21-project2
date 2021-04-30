@@ -4,7 +4,65 @@ April 24, 2021
 
 ## How to Install and Use This Package
 
-### Virtual Environment
+The steps below will set the environment variable, run the training steps, and unredact names.
+
+Set `PJ_HOME` to the location of the project directory.
+
+    export PJ_HOME=~/projects/cs5293sp21-project2 (or wherever the project is)
+
+### Training
+
+    cd $PJ_HOME/project2
+    python extract_names.py
+
+### Predicting
+
+    cd $PJ_HOME/project2
+    python unredactor.py
+
+---
+
+### Create Redacted Reviews
+
+Manually create redacted reviews. Redacted character is (█). (See $PJ_HOME/redacted_reviews.)
+
+    cd $PJ_HOME/aclImdb/train/unsup
+    grep -rwl . -e 'Anthony Hopkins'
+
+Redacted Actors
+  - Anthony Hopkins
+  - Cuba Gooding Jr.
+  - Denzel Washington
+  - Gabrielle Union
+  - Meryl Streep
+  - Robin Williams
+
+---
+
+### Training
+
+- Extract names from reviews. (extract_names.py)
+- Convert names into entities.
+- Compute features for entities.
+
+---
+
+### Testing
+
+    # Run pytest
+    cd $PJ_HOME/tests
+    pytest
+
+---
+
+### Unredact a Review
+
+- Given a redacted review, unredact using name features, etc.
+- Print redaction pattern and name options in output directory.
+
+---
+
+### Virtual Environment Setup
 
 #### Install and set Python 3.8.6
 
@@ -43,6 +101,9 @@ April 24, 2021
 
     python -m pip install -r requirements.txt
 
+### To run
+
+    pipenv run python project2/unredactor.py -i "input/*.txt"
 
 ## Assumptions/Simplifications
 * Names are in the format FirstName LastName, with a space separating two blocks of redaction characters, each the same length as the corresponding name. 
@@ -98,9 +159,15 @@ Takes a string (name) and creates an entity named "name" in the format: {'name':
 	* Rank possible matches by popularity instead of alphabetically so that we're picking the most likely actors
 	* Incoporate gender? Would need to use surrounding text (not just the name itself), but this should definitely be possible, especially using the sentence diagram--it should be able to link pronouns with their associated nouns. Not sure how to go about this though, so probably out of the scope of this project.
 	* Also, currently just hardcoding the redacted examples into my function, instead of taking input files and reading through them to find unredacted portions. That could definitely be changed
- 
+5. Adding frequency -- I tweaked the extraction code provided in the project outline so that it generates two files: one that has just a list of all unique names (extracted_names) and another that has each unique name and its total number of occurrences. This will let me use frequency as an additional feature, so I can select the names that occur more often.
+	* Okay I ended up tweaking my frequency code so that the second file is non-unique names and their total number of occurrences aren't computed until the main.py function is run--I was having formatting issues. 
 # Citations
 Throughout the project my dad, Greg Yut, helped me understand the nuts and bolts, presumably all the stuff I should've known prior to taking this class but didn't learn because I'm not a C S student (i.e. Linux syntax/quirks, troubleshooting tips, etc).
 
 While troubleshooting, I used the following resources:
-* []()
+* [How to convert Python Dictionary to a list?](https://www.tutorialspoint.com/How-to-convert-Python-Dictionary-to-a-list)
+* [sklearn.model_selection.train_test_split](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html)
+* [Wihat's a quick way to comment/uncomment lines in Vim?](https://stackoverflow.com/questions/1676632/whats-a-quick-way-to-comment-uncomment-lines-in-vim)
+* [How can I count the occurrences of a list item?](https://stackoverflow.com/questions/2600191/how-can-i-count-the-occurrences-of-a-list-item)
+* [How to Convert Nested List into dictionary in Python where lst[0][0] is the key](https://stackoverflow.com/questions/16359052/how-to-convert-nested-list-into-dictionary-in-python-where-lst00-is-the-key)
+

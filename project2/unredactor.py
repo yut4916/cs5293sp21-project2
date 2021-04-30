@@ -1,4 +1,4 @@
-# TO RUN: 
+# TO RUN: pipenv run python project2/unredactor.py -i "input/*.txt"
 
 import os
 from os import listdir
@@ -10,19 +10,22 @@ import glob # Reading in file names
 import re
 import spacy
 #import sklearn
-
+from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier 
 from sklearn.model_selection import cross_val_score
 
+from collections import Counter # for counting occurrences of all elements in a list
+
 # Define global variables
 nlp = spacy.load("en_core_web_sm")
 NAME_PATH = os.path.expandvars('$PJ_HOME/extracted_names')
+FREQ_PATH = os.path.expandvars('$PJ_HOME/extracted_names_freq')
 OUTPUT_DIR = './output'
 REDACTED_REVIEW_DIR = './p2/redacted_reviews'
 
-def main(): #docList
+def main(docList):
     print("Initiating Project 2...")
     #print("Un-redacting the following documents:\n", docList)
 
@@ -50,50 +53,41 @@ def main(): #docList
         'Robin Williams': '█████ ████████',
     }
 
+    counts = get_freq_from_file()
+    #print(type(counts))
+
     # redactions = [anthony_hopkins, cuba_gooding_jr, denzel_washington, gabrielle_union, robin_williams]
     for name, redaction in redactions.items():
         print("\n" + "-" * 33)
-        print(f"Name: {name}")
+        print(f"Correct name: {name}")
         redacted_entities = [create_entity_from_name(redaction)]
         compute_entity_features(redacted_entities)
         for entity in redacted_entities:
-            print(f"target_entity: {entity}")
+            print(f"Target pattern: {entity['pattern']} {entity['name']}")
             matching_entities = find_matching_entities(training_entities_by_name, entity)
-            print("There are", len(matching_entities), "matching entities:\n")
-            #for match in matching_entities: 
-            #    print(match['name'])
+            n = len(matching_entities)
+            print("There are", n, "total matching entities.\n")
+            
+            # Assign frequency
+            for entity in matching_entities:
+                assign_freq(entity)
+            
+            # Sort by most frequent
+            matching_entities = sorted(matching_entities, key=lambda elem: elem["frequency"], reverse=True)
+            
+            # Just print the top 10 (unless there are <10 matches)
+            if n < 10:
+                n_top = n
+            else:
+                n_top = 10
 
-    # Predicting
-    # print('\n')
-    # print('Predicting')
-    # redacted_reviews = listdir(REDACTED_REVIEW_DIR)
-    # for review in redacted_reviews:
-    #     review_path = join(REDACTED_REVIEW_DIR, review)
-    #     review_file = open(review_path, "r")
-    #     review_text = review_file.read()
-    #     redacted_entities = extract_redacted_entities(review_text)
-    #     compute_entity_features(redacted_entities)
-    #     for entity in redacted_entities:
-    #         print("\n" + "-" * 33)
-    #         print(f"target_entity: {entity}")
-    #         matching_entities = find_matching_entities(training_entities_by_name, entity)
-    #         print(f"matching_entities: {matching_entities}")
+            winners = matching_entities[:n_top]
 
-    D = make_features("The mamma mia franchise only succeeded because Meryl Streep is an absolute icon")
-    print(D)
+            print("The", n_top, "most likely contenders are:")
+            for match in winners: 
+                print(match)
+                #print(match['name'])
 
-    print(type(training_entities_by_name[name]))
-
-    v = DictVectorizer(sparse=False)
-    train_X = v.fit_transform([x for (x,y) in D[:-1]])
-    train_y = [y for (x,y) in training_entities_by_name[:-1]]
-    test_X = v.fit_transform([x for (x,y) in training_entities_by_name[-1:]])
-    test_y = [y for (x,y) in training_entities_by_name[-1:]]
-    clf = DecisionTreeClassifier(criterion="entropy")
-    #clf = KNeighborsClassifier(n_neighbors=3)
-    clf.fit(train_X, train_y)
-    print("Decison Tree: ", clf.predict(test_X), clf.predict_proba(test_X), test_y)
-    print("Cross Val Score: ", cross_val_score(clf, v.fit_transform([x for (x,y) in training_entities_by_name]), [y for (x,y) in training_entities_by_name], cv=2))
 
 def compute_training_entities_by_name():
     training_entities_by_name = {}
@@ -113,10 +107,12 @@ def create_entity_from_name(name):
     return {'name': name}
 
 def compute_entity_features(entities):
+    
     for entity in entities:
         # Pattern for name lengths
         pattern = compute_name_pattern(entity['name'])
         entity['pattern'] = pattern
+        
 
 def compute_name_pattern(name):
     word_lengths = list(map(lambda element: str(len(element)), name.split()))
@@ -136,44 +132,31 @@ def find_matching_entities(entities_by_name, target_entity):
             matching_entities.append(entity)
     return matching_entities
 
-# =========== FROM CLASS =======================================================
+def get_freq_from_file():
+    names = []
+    with open(FREQ_PATH) as f:
+        names = f.read().splitlines()
 
-def make_features(sentence, ne="PERSON"):    
-    doc = nlp(sentence)    
-    D = []    
-    for e in doc.ents:        
-        if e.label_ == ne:            
-            d = {}            
-            d["name"] = e.text # We want to predict this            
-            d["length"] = len(e.text)            
-            d["word_idx"] = e.start            
-            d["char_idx"] = e.start_char            
-            d["spaces"] = 1 if " " in e.text else 0            
-            # gender?            
-            # Number of occurences?
-            D.append(d)    
-    return D
+    #print(type(freq))
 
+    # Count number of occurrences for each name
+    counts = Counter(names)
+    counts = counts.items() # convert to list
+    counts = sorted(counts, key=lambda elem: elem[1], reverse=True)
 
-def main2():
-    # print(len(sample))
-    features = []
-    for s in sample:
-        features.extend(make_features(s))
-    
-    # print(features)
-    v = DictVectorizer(sparse=False)
-    train_X = v.fit_transform([x for (x,y) in features[:-1]])
-    train_y = [y for (x,y) in features[:-1]]
-    test_X = v.fit_transform([x for (x,y) in features[-1:]])
-    test_y = [y for (x,y) in features[-1:]]
-    clf = DecisionTreeClassifier(criterion="entropy")
-    #clf = KNeighborsClassifier(n_neighbors=3)
-    clf.fit(train_X, train_y)
-    print("Decison Tree: ", clf.predict(test_X), clf.predict_proba(test_X), test_y)
-    print("Cross Val Score: ", cross_val_score(clf, v.fit_transform([x for (x,y) in features]), [y for (x,y) in features], cv=2))
+    # Convert from list to dictionary
+    freq_dict = {elem[0] : elem[1] for elem in counts}
+    return freq_dict
 
+def assign_freq(entity):
+    name = entity['name']
+    freq_dict = get_freq_from_file()
 
+    # Frequency of name in training dataset
+    #print(name)
+    #print(type(name))
+    frequency = freq_dict[name] 
+    entity['frequency'] = frequency
 
 
 if __name__ == '__main__':
@@ -184,12 +167,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(epilog=epilog)
              
     # Set up arguments
-    parser.add_argument("-i", "--input", type=str, required=False,
+    parser.add_argument("-i", "--input", type=str, required=True,
                         help="Glob for valid text file(s)")
 
-#    args = parser.parse_args()
-#    if args.input:
-#        docList = glob.glob(args.input)
-#        main(docList)
+    args = parser.parse_args()
+    if args.input:
+        docList = glob.glob(args.input)
+        main(docList)
 
-    main()
