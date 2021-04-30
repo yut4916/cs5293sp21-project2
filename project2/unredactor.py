@@ -8,22 +8,13 @@ from random import sample
 import argparse # Function arguments
 import glob # Reading in file names
 import re
-import spacy
-#import sklearn
-from sklearn.model_selection import train_test_split
-from sklearn.feature_extraction import DictVectorizer
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neighbors import KNeighborsClassifier 
-from sklearn.model_selection import cross_val_score
 
 from collections import Counter # for counting occurrences of all elements in a list
 
 # Define global variables
-nlp = spacy.load("en_core_web_sm")
 NAME_PATH = os.path.expandvars('$PJ_HOME/extracted_names')
 FREQ_PATH = os.path.expandvars('$PJ_HOME/extracted_names_freq')
-OUTPUT_DIR = './output'
-REDACTED_REVIEW_DIR = './p2/redacted_reviews'
+OUTPUT_DIR = './output/'
 
 def main(docList):
     print("Initiating Project 2...")
@@ -49,7 +40,9 @@ def main(docList):
         # Open ith file
         txt = open(doc, "r")
         txt = txt.read()
-        redacted = re.findall(r'([█]+[ ][█]+)+', txt)
+        redacted = re.findall(r'([█]+([ ][█]+)+)', txt)
+        redacted = [tup[0] for tup in redacted] # Just get the first element of each tuple (The full redaction)
+        #print(redacted)
         redactionsL.append(redacted)
     
     redactions = {}
@@ -61,7 +54,6 @@ def main(docList):
 
     print('\n')
     print('Predicting')
-    print(redactions)
 #    redactions = {
 #        'Anthony Hopkins': '███████ ███████',
 #        'Cuba Gooding Jr.': '████ ███████ ███',
@@ -71,10 +63,6 @@ def main(docList):
 #        'Robin Williams': '█████ ████████',
 #    }
 
-    counts = get_freq_from_file()
-    #print(type(counts))
-
-    # redactions = [anthony_hopkins, cuba_gooding_jr, denzel_washington, gabrielle_union, robin_williams]
     for name, redaction in redactions.items():
         print("\n" + "-" * 33)
         print(f"Correct name: {name}")
@@ -93,6 +81,11 @@ def main(docList):
             # Sort by most frequent
             matching_entities = sorted(matching_entities, key=lambda elem: elem["frequency"], reverse=True)
             
+            # Write list of all matches to file
+            with open(OUTPUT_DIR + name, "w") as output_file:
+                output_file.writelines("%s\n" % line for line in matching_entities)
+            output_file.close()
+
             # Just print the top 10 (unless there are <10 matches)
             if n < 10:
                 n_top = n
@@ -105,7 +98,11 @@ def main(docList):
             for match in winners: 
                 print(match)
                 #print(match['name'])
-
+            
+    print("\n" + "-" * 33)
+    print(f"For full lists of matches, see output directory.")
+    print("Project 2 unredaction process complete.")
+    print("\n" + "-" * 33)
 
 def compute_training_entities_by_name():
     training_entities_by_name = {}
@@ -124,13 +121,11 @@ def get_names_from_file():
 def create_entity_from_name(name):
     return {'name': name}
 
-def compute_entity_features(entities):
-    
+def compute_entity_features(entities): 
     for entity in entities:
         # Pattern for name lengths
         pattern = compute_name_pattern(entity['name'])
         entity['pattern'] = pattern
-        
 
 def compute_name_pattern(name):
     word_lengths = list(map(lambda element: str(len(element)), name.split()))
@@ -155,8 +150,6 @@ def get_freq_from_file():
     with open(FREQ_PATH) as f:
         names = f.read().splitlines()
 
-    #print(type(freq))
-
     # Count number of occurrences for each name
     counts = Counter(names)
     counts = counts.items() # convert to list
@@ -171,8 +164,6 @@ def assign_freq(entity):
     freq_dict = get_freq_from_file()
 
     # Frequency of name in training dataset
-    #print(name)
-    #print(type(name))
     frequency = freq_dict[name] 
     entity['frequency'] = frequency
 
