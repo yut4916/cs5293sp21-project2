@@ -42,16 +42,34 @@ def main(docList):
 
     # --------------------------------------------
     # Predicting
+
+    # Get redaction strings
+    redactionsL = []
+    for doc in docList:
+        # Open ith file
+        txt = open(doc, "r")
+        txt = txt.read()
+        redacted = re.findall(r'([█]+[ ][█]+)+', txt)
+        redactionsL.append(redacted)
+    
+    redactions = {}
+    i = 0
+    for tup in redactionsL:
+        for block in tup:
+            redactions[f'Unknown{i}'] = block
+            i = i + 1
+
     print('\n')
     print('Predicting')
-    redactions = {
-        'Anthony Hopkins': '███████ ███████',
-        'Cuba Gooding Jr.': '████ ███████ ███',
-        'Denzel Washington': '██████ ██████████',
-        'Gabrielle Union': '█████████ █████',
-        'Meryl Streep': '█████ ██████ ',
-        'Robin Williams': '█████ ████████',
-    }
+    print(redactions)
+#    redactions = {
+#        'Anthony Hopkins': '███████ ███████',
+#        'Cuba Gooding Jr.': '████ ███████ ███',
+#        'Denzel Washington': '██████ ██████████',
+#        'Gabrielle Union': '█████████ █████',
+#        'Meryl Streep': '█████ ██████ ',
+#        'Robin Williams': '█████ ████████',
+#    }
 
     counts = get_freq_from_file()
     #print(type(counts))

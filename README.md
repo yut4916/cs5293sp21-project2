@@ -110,6 +110,7 @@ Redacted Actors
 * Input files will be in .txt format
 * Only use a small subset of the IMDB dataset
 * Start simple (just length of names/position of spaces) and build from there
+* One major limitation, of course, is that we're relying on spacy's named entity recognition tool to locate names.
 
 ## Function Descriptions
 
@@ -161,6 +162,9 @@ Takes a string (name) and creates an entity named "name" in the format: {'name':
 	* Also, currently just hardcoding the redacted examples into my function, instead of taking input files and reading through them to find unredacted portions. That could definitely be changed
 5. Adding frequency -- I tweaked the extraction code provided in the project outline so that it generates two files: one that has just a list of all unique names (extracted_names) and another that has each unique name and its total number of occurrences. This will let me use frequency as an additional feature, so I can select the names that occur more often.
 	* Okay I ended up tweaking my frequency code so that the second file is non-unique names and their total number of occurrences aren't computed until the main.py function is run--I was having formatting issues. 
+6. Starting to come together! Is my code a mess? Yes. Is my readme sparse? Also yes. But the damn thing works decently!
+	* Still haven't added code to read through input files
+
 # Citations
 Throughout the project my dad, Greg Yut, helped me understand the nuts and bolts, presumably all the stuff I should've known prior to taking this class but didn't learn because I'm not a C S student (i.e. Linux syntax/quirks, troubleshooting tips, etc).
 
@@ -170,4 +174,6 @@ While troubleshooting, I used the following resources:
 * [Wihat's a quick way to comment/uncomment lines in Vim?](https://stackoverflow.com/questions/1676632/whats-a-quick-way-to-comment-uncomment-lines-in-vim)
 * [How can I count the occurrences of a list item?](https://stackoverflow.com/questions/2600191/how-can-i-count-the-occurrences-of-a-list-item)
 * [How to Convert Nested List into dictionary in Python where lst[0][0] is the key](https://stackoverflow.com/questions/16359052/how-to-convert-nested-list-into-dictionary-in-python-where-lst00-is-the-key)
+* [collections — Container datatypes](https://docs.python.org/3/library/collections.html#collections.Counter)
+* [Sorting HOW TO](https://docs.python.org/3/howto/sorting.html)
 
